@@ -18,6 +18,10 @@ app.get('/', (req, res) => {
   res.json({ message: 'Health Tracker API is running' });
 });
 
+// Routes
+const authRouter = require('./routes/auth.routes');
+app.use('/api/auth', authRouter);
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
