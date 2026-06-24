@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const authMiddleware = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
@@ -99,6 +100,23 @@ router.post('/login', async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// GET /api/auth/me
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    // Find the user in MongoDB using req.userId attached by the authMiddleware
+    // Exclude the password field from the query results for security
+    const user = await User.findById(req.userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error('Get profile error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
