@@ -31,6 +31,9 @@ app.use('/api/meals', mealRouter);
 const sleepRouter = require('./routes/sleep.routes');
 app.use('/api/sleep', sleepRouter);
 
+const waterRouter = require('./routes/water.routes');
+app.use('/api/water', waterRouter);
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
