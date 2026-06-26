@@ -65,3 +65,12 @@ body {
   background-color: var(--bg-card-hover);
   border-color: var(--text-secondary);
 }
+
+.app-main-content {
+  padding-top: 88px; /* 64px navbar height + 24px space */
+  padding-bottom: 2rem;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}

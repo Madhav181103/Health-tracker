@@ -7,10 +7,19 @@ import Log from './pages/Log';
 import Plan from './pages/Plan';
 import Chat from './pages/Chat';
 
+import Navbar from './components/Navbar';
+
 function ProtectedRoute({ children }) {
   const { token } = useAuth();
   if (token) {
-    return children;
+    return (
+      <div className="app-layout">
+        <Navbar />
+        <main className="app-main-content">
+          {children}
+        </main>
+      </div>
+    );
   }
   return <Navigate to="/login" replace />;
 }
