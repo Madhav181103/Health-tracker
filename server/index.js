@@ -37,6 +37,9 @@ app.use('/api/water', waterRouter);
 const dashboardRouter = require('./routes/dashboard.routes');
 app.use('/api/dashboard', dashboardRouter);
 
+const aiRouter = require('./routes/ai.routes');
+app.use('/api/ai', aiRouter);
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
