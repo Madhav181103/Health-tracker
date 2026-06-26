@@ -18,6 +18,21 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 /**
+ * Single-Turn vs Multi-Turn Conversations:
+ * 
+ * - model.generateContent() (Single Turn):
+ *   This is a stateless method designed for one-off prompts. It takes a single input request and returns
+ *   a completion. To use it for a conversational interface, you would have to manually format, manage,
+ *   and append the previous conversation logs (chat history) into the prompt text on each call.
+ * 
+ * - model.startChat() (Multi-Turn):
+ *   This is a stateful session helper that simplifies conversation flows. It tracks and persists the chat history
+ *   automatically. When you call chat.sendMessage(), the SDK appends the user's message and Gemini's response
+ *   to the running history list, maintaining contextual continuity over multiple turns without requiring the
+ *   developer to manually rebuild the conversation chain.
+ */
+
+/**
  * Generates a weekly plan based on user profile and activity.
  * 
  * @param {Object} userData 
@@ -93,4 +108,38 @@ CRITICAL INSTRUCTIONS:
   }
 }
 
-module.exports = { model, generateWeeklyPlan };
+/**
+ * Handles nutritionist chat with memory and user health metrics context.
+ * 
+ * @param {Array} messages - Chat history in Gemini's format
+ * @param {Object} userContext - Current user status metrics
+ * @param {string} userContext.goal - 'lose' | 'maintain' | 'gain'
+ * @param {number} userContext.dailyCalorieTarget
+ * @param {number} userContext.todayCalories
+ * @returns {Promise<string>} The generated chat response text
+ */
+async function chatWithNutritionist(messages, userContext) {
+  try {
+    const chatMessages = [...messages];
+
+    const systemContext = `You are a concise, friendly nutritionist chatbot. The user's fitness goal is to ${userContext.goal} weight. Their daily calorie target is ${userContext.dailyCalorieTarget} kcal and they have consumed ${userContext.todayCalories} kcal today. Answer nutrition questions in 2-4 sentences. Be specific with numbers when relevant. Never give medical advice.`;
+
+    if (chatMessages.length === 0) {
+      chatMessages.push({ role: 'user', parts: [{ text: systemContext }] });
+    } else if (chatMessages.length === 1) {
+      chatMessages.unshift({ role: 'user', parts: [{ text: systemContext }] });
+    }
+
+    const history = chatMessages.slice(0, -1);
+    const lastMessage = chatMessages[chatMessages.length - 1];
+
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessage(lastMessage.parts[0].text);
+    return result.response.text();
+  } catch (error) {
+    console.error('Error in nutritionist chat service:', error);
+    throw new Error('Failed to communicate with Gemini Nutritionist');
+  }
+}
+
+module.exports = { model, generateWeeklyPlan, chatWithNutritionist };
