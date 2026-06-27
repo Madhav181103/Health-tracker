@@ -1,1 +1,84 @@
 /* App Styles */
+
+/* Dashboard Layout Grid */
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.dashboard-row-1 {
+  width: 100%;
+}
+
+.dashboard-row-2 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+.dashboard-row-3 {
+  display: grid;
+  grid-template-columns: 4fr 6fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.dashboard-row-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Skeleton Loader */
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.skeleton-box {
+  background-color: var(--bg-card-hover, #263348);
+  border: 1px solid var(--border, #334155);
+  border-radius: var(--radius, 12px);
+  animation: skeletonPulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-stat-card {
+  height: 100px;
+}
+
+.skeleton-chart-left {
+  height: 350px;
+}
+
+.skeleton-chart-right {
+  height: 350px;
+}
+
+.skeleton-bottom-card {
+  height: 200px;
+}
+
+/* Responsiveness */
+@media (max-width: 1024px) {
+  .dashboard-row-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dashboard-row-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-row-2 {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-row-4 {
+    grid-template-columns: 1fr;
+  }
+}
