@@ -6,21 +6,15 @@ import WeeklyChart from '../components/WeeklyChart';
 import MacroBreakdown from '../components/MacroBreakdown';
 import StreakBadge from '../components/StreakBadge';
 
-// Import local layout styles
+// Import CSS variables and layout styles
 import '../App.css';
 
 export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState(null);
-  
-  // Temporary check to prevent unused variable warnings before final wiring
-  if (dashboardData) {
-    console.debug('Dashboard data loaded:', dashboardData);
-  }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const { user } = useAuth();
-  const userName = user?.name || 'User';
 
   const fetchDashboardData = async () => {
     try {
@@ -40,7 +34,25 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
-  // Loading State
+  // Time-based greeting helper
+  const getGreeting = () => {
+    const hours = new Date().getHours();
+    if (hours < 12) return 'Good morning';
+    if (hours < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  // Date formatter helper
+  const getFormattedDate = () => {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Loading State UI
   if (loading) {
     return (
       <div className="dashboard-container" style={{ animation: 'fadeIn 0.5s ease' }}>
@@ -70,7 +82,7 @@ export default function Dashboard() {
     );
   }
 
-  // Error State
+  // Error State UI
   if (error) {
     return (
       <div 
@@ -121,7 +133,39 @@ export default function Dashboard() {
     );
   }
 
-  // Success State (Layout with placeholder data)
+  // Destructure metrics with safety fallbacks
+  const today = dashboardData?.today || {
+    totalCalories: 0,
+    caloriesBurned: 0,
+    waterLiters: 0,
+    sleepHours: null,
+    totalProtein: 0,
+    totalCarbs: 0,
+    totalFat: 0
+  };
+
+  const weekly = dashboardData?.weekly || {
+    labels: [],
+    calories: [],
+    workoutMinutes: []
+  };
+
+  const streak = dashboardData?.streak || {
+    current: 0,
+    longest: 0
+  };
+
+  // Safely extract user profile
+  const currentUser = dashboardData?.user || user || {
+    name: 'User',
+    goal: 'maintain',
+    dailyCalorieTarget: 2000
+  };
+
+  // Safe fallback for streak calculations
+  const streakCurrent = streak.current ?? 0;
+  const streakLongest = streak.longest ?? (dashboardData?.streak?.longest ?? streakCurrent);
+
   return (
     <div className="dashboard-container">
       {/* Row 1: Greeting banner */}
@@ -138,47 +182,66 @@ export default function Dashboard() {
           }}
         >
           <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#ffffff' }}>
-            Hello, {userName}! 👋
+            {getGreeting()}, {currentUser.name}! 👋
           </h2>
           <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', fontWeight: '500' }}>
-            Track your health logs, stay active, and crush your goals.
+            {getFormattedDate()}
           </p>
         </div>
       </div>
 
-      {/* Row 2: 4 stat cards side by side (1fr each) */}
+      {/* Row 2: 4 stat cards */}
       <div className="dashboard-row-2">
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-            Calories Consumed
-          </span>
-          <span style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--accent-green, #22c55e)' }}>
-            0 kcal
-          </span>
+        {/* Calories card */}
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ fontSize: '2.25rem', userSelect: 'none' }}>🍽️</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--accent-green, #22c55e)' }}>
+              {today.totalCalories} kcal
+            </span>
+            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+              Consumed
+            </span>
+          </div>
         </div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-            Calories Burned
-          </span>
-          <span style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--accent-blue, #3b82f6)' }}>
-            0 kcal
-          </span>
+
+        {/* Burned card */}
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ fontSize: '2.25rem', userSelect: 'none' }}>🔥</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--accent-blue, #3b82f6)' }}>
+              {today.caloriesBurned} kcal
+            </span>
+            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+              Burned
+            </span>
+          </div>
         </div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-            Water Intake
-          </span>
-          <span style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--accent-amber, #f59e0b)' }}>
-            0.0 L
-          </span>
+
+        {/* Water card */}
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ fontSize: '2.25rem', userSelect: 'none' }}>💧</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--accent-amber, #f59e0b)' }}>
+              {typeof today.waterLiters === 'number' ? today.waterLiters.toFixed(1) : today.waterLiters}L
+            </span>
+            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+              Water Intake
+            </span>
+          </div>
         </div>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-            Sleep Duration
-          </span>
-          <span style={{ fontSize: '1.75rem', fontWeight: '800', color: 'var(--accent-orange, #f97316)' }}>
-            0.0 hrs
-          </span>
+
+        {/* Sleep card */}
+        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ fontSize: '2.25rem', userSelect: 'none' }}>😴</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+            <span style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--accent-orange, #f97316)' }}>
+              {today.sleepHours !== null && today.sleepHours !== undefined ? `${today.sleepHours}h` : '—'}
+            </span>
+            <span style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+              Sleep Duration
+            </span>
+          </div>
         </div>
       </div>
 
@@ -195,7 +258,7 @@ export default function Dashboard() {
           }}
         >
           <h4 style={{ fontSize: '1rem', fontWeight: '700', alignSelf: 'flex-start' }}>Calorie Summary</h4>
-          <CalorieRing consumed={0} target={2000} />
+          <CalorieRing consumed={today.totalCalories} target={currentUser.dailyCalorieTarget} />
         </div>
         
         <div 
@@ -208,14 +271,18 @@ export default function Dashboard() {
           }}
         >
           <h4 style={{ fontSize: '1rem', fontWeight: '700' }}>Weekly Activity Trends</h4>
-          <WeeklyChart labels={[]} caloriesData={[]} workoutMinutesData={[]} />
+          <WeeklyChart 
+            labels={weekly.labels} 
+            caloriesData={weekly.calories} 
+            workoutMinutesData={weekly.workoutMinutes} 
+          />
         </div>
       </div>
 
       {/* Row 4: MacroBreakdown (left, 50%) + StreakBadge (right, 50%) */}
       <div className="dashboard-row-4">
-        <MacroBreakdown protein={0} carbs={0} fat={0} />
-        <StreakBadge current={0} longest={0} />
+        <MacroBreakdown protein={today.totalProtein} carbs={today.totalCarbs} fat={today.totalFat} />
+        <StreakBadge current={streakCurrent} longest={streakLongest} />
       </div>
     </div>
   );
