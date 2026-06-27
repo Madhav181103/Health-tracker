@@ -15,7 +15,7 @@
 |-------|------|
 | Frontend | React, Vite, Chart.js, React Router |
 | Backend | Node.js, Express, MongoDB, Mongoose |
-| AI | Google Gemini 1.5 Flash |
+| AI | Google Gemini 3.5 Flash |
 | Auth | JWT + bcrypt |
 | Deploy | Render (API) + Vercel (Client) |
 
@@ -38,6 +38,6 @@ npm run dev
 ```
 
 ## Deployment
-- Server → Render (Web Service, Node, start command: node index.js)
-- Client → Vercel (auto-detects Vite, set VITE_API_URL env var)
-- Database → MongoDB Atlas (free M0 tier)
+- **Live Site (Frontend)**: [https://client-flame-alpha-29.vercel.app](https://client-flame-alpha-29.vercel.app)
+- **API Server (Backend)**: [https://health-tracker-backend-5mk8.onrender.com](https://health-tracker-backend-5mk8.onrender.com)
+- **Database**: MongoDB Atlas (Free M0 tier)
