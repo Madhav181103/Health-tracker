@@ -6,6 +6,10 @@ const authMiddleware = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
@@ -15,6 +19,25 @@ router.post('/register', async (req, res) => {
     // 2. Validate required fields
     if (!name || !email || !password) {
       return res.status(400).json({ message: 'Name, email and password are required' });
+    }
+
+    if (name.trim().length < 2) {
+      return res.status(400).json({ message: 'Name must be at least 2 characters' });
+    }
+
+    if (!validateEmail(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    if (dailyCalorieTarget !== undefined && dailyCalorieTarget !== null) {
+      const target = Number(dailyCalorieTarget);
+      if (isNaN(target) || target < 500 || target > 10000) {
+        return res.status(400).json({ message: 'Calorie target must be between 500 and 10000' });
+      }
     }
 
     // 3. Check if a user with this email already exists
