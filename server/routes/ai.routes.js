@@ -3,7 +3,7 @@ const User = require('../models/User');
 const Workout = require('../models/Workout');
 const Meal = require('../models/Meal');
 const authMiddleware = require('../middleware/auth.middleware');
-const { generateWeeklyPlan, chatWithNutritionist } = require('../services/gemini.service');
+const { generateWeeklyPlan, chatWithNutritionist, modifyWeeklyPlan } = require('../services/gemini.service');
 
 const router = express.Router();
 
@@ -61,6 +61,38 @@ router.post('/chat', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error in nutritionist chat route:', error);
     return res.status(500).json({ message: 'AI chat failed', error: error.message });
+  }
+});
+
+// POST /modify-plan - Modify the generated weekly fitness and diet plan
+router.post('/modify-plan', authMiddleware, async (req, res) => {
+  try {
+    const { currentPlan, modificationInstruction } = req.body;
+
+    if (!currentPlan || !Array.isArray(currentPlan) || currentPlan.length === 0) {
+      return res.status(400).json({ message: 'currentPlan must be a non-empty array' });
+    }
+
+    if (!modificationInstruction || typeof modificationInstruction !== 'string') {
+      return res.status(400).json({ message: 'modificationInstruction must be a non-empty string' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const userData = {
+      name: user.name,
+      goal: user.goal,
+      dailyCalorieTarget: user.dailyCalorieTarget
+    };
+
+    const result = await modifyWeeklyPlan(currentPlan, modificationInstruction, userData);
+    return res.status(200).json({ plan: result.weeklyPlan });
+  } catch (error) {
+    console.error('Error modifying weekly plan in route:', error);
+    return res.status(500).json({ message: 'Failed to modify plan', error: error.message });
   }
 });
 

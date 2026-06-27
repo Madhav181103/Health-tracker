@@ -15,7 +15,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
  *      * Capabilities: While 'gemini-1.5-pro' is designed for complex reasoning, multi-modal tasks, and heavy tasks, 'gemini-1.5-flash' is perfectly suited for general text processing, JSON formatting, summaries, and chat features.
  */
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' });
 
 /**
  * Single-Turn vs Multi-Turn Conversations:
@@ -120,20 +120,34 @@ CRITICAL INSTRUCTIONS:
  */
 async function chatWithNutritionist(messages, userContext) {
   try {
-    const chatMessages = [...messages];
-
     const systemContext = `You are a concise, friendly nutritionist chatbot. The user's fitness goal is to ${userContext.goal} weight. Their daily calorie target is ${userContext.dailyCalorieTarget} kcal and they have consumed ${userContext.todayCalories} kcal today. Answer nutrition questions in 2-4 sentences. Be specific with numbers when relevant. Never give medical advice.`;
 
-    if (chatMessages.length === 0) {
-      chatMessages.push({ role: 'user', parts: [{ text: systemContext }] });
-    } else if (chatMessages.length === 1) {
-      chatMessages.unshift({ role: 'user', parts: [{ text: systemContext }] });
+    // Filter and clean history: Gemini chat history must start with a 'user' turn and alternate roles.
+    // The initial message from the assistant is filtered out.
+    const cleanMessages = [];
+    let expectedRole = 'user';
+    for (const msg of messages) {
+      if (msg.role === expectedRole) {
+        cleanMessages.push(msg);
+        expectedRole = expectedRole === 'user' ? 'model' : 'user';
+      }
     }
 
-    const history = chatMessages.slice(0, -1);
-    const lastMessage = chatMessages[chatMessages.length - 1];
+    if (cleanMessages.length === 0) {
+      throw new Error('No valid user messages found in chat history.');
+    }
 
-    const chat = model.startChat({ history });
+    const history = cleanMessages.slice(0, -1);
+    const lastMessage = cleanMessages[cleanMessages.length - 1];
+
+    const chat = model.startChat({
+      systemInstruction: {
+        role: 'system',
+        parts: [{ text: systemContext }]
+      },
+      history
+    });
+
     const result = await chat.sendMessage(lastMessage.parts[0].text);
     return result.response.text();
   } catch (error) {
@@ -142,4 +156,76 @@ async function chatWithNutritionist(messages, userContext) {
   }
 }
 
-module.exports = { model, generateWeeklyPlan, chatWithNutritionist };
+/**
+ * Modifies an existing weekly plan based on a user's instruction.
+ * 
+ * @param {Array} currentPlan 
+ * @param {string} modificationInstruction 
+ * @param {Object} userData 
+ * @returns {Promise<Object>} The updated weekly plan JSON object
+ */
+async function modifyWeeklyPlan(currentPlan, modificationInstruction, userData) {
+  const prompt = `
+You are a professional health, diet, and fitness AI assistant.
+Your task is to modify the existing 7-day diet and workout plan for "${userData.name}" according to their request.
+
+User Details:
+- Fitness Goal: ${userData.goal} (lose weight, maintain weight, or gain weight)
+- Daily Calorie Target: ${userData.dailyCalorieTarget} kcal
+
+Current Weekly Plan:
+${JSON.stringify(currentPlan, null, 2)}
+
+User's Modification Request:
+"${modificationInstruction}"
+
+Please apply this request across all relevant days in the plan. Ensure you do not change anything else unless requested or required to keep the plan cohesive.
+
+CRITICAL INSTRUCTIONS:
+- You must respond ONLY with a raw, valid JSON object.
+- DO NOT wrap the output in markdown code blocks (such as \`\`\`json ... \`\`\`), do not include any backticks, and do not include any introductory or concluding text or explanation. 
+- The JSON object must strictly match this structure:
+{
+  "weeklyPlan": [
+    {
+      "day": "Monday",
+      "workout": {
+        "type": "string",
+        "duration": number,
+        "exercises": ["exercise 1", "exercise 2", "exercise 3"]
+      },
+      "meals": {
+        "breakfast": { "name": "string", "calories": number, "protein": number },
+        "lunch": { "name": "string", "calories": number, "protein": number },
+        "dinner": { "name": "string", "calories": number, "protein": number },
+        "snack": { "name": "string", "calories": number, "protein": number }
+      },
+      "totalCalories": number,
+      "tip": "string"
+    }
+  ]
+}
+`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    let text = result.response.text();
+
+    // Clean up markdown wrappers
+    text = text.replace(/```json|```/g, '').trim();
+
+    // Extract JSON object if there is wrapping text
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      text = jsonMatch[0];
+    }
+
+    const parsedPlan = JSON.parse(text);
+    return parsedPlan;
+  } catch (error) {
+    console.error('Error modifying weekly plan:', error);
+    throw new Error('Gemini returned invalid JSON');
+  }
+}
+
+module.exports = { model, generateWeeklyPlan, chatWithNutritionist, modifyWeeklyPlan };

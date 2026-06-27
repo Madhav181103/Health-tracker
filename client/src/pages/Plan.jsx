@@ -8,11 +8,15 @@ export default function Plan() {
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [editPrompt, setEditPrompt] = useState('');
+  const [modifying, setModifying] = useState(false);
+  const [modifyError, setModifyError] = useState(null);
 
   const handleGenerate = async () => {
     try {
       setLoading(true);
       setError(null);
+      setModifyError(null);
       
       const response = await api.post('/ai/weekly-plan');
       setPlan(response.data.plan);
@@ -21,6 +25,27 @@ export default function Plan() {
       setError('Failed to generate plan. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleModify = async () => {
+    if (!editPrompt.trim() || modifying || !plan) return;
+
+    try {
+      setModifying(true);
+      setModifyError(null);
+      
+      const response = await api.post('/ai/modify-plan', {
+        currentPlan: plan,
+        modificationInstruction: editPrompt.trim()
+      });
+      setPlan(response.data.plan);
+      setEditPrompt('');
+    } catch (err) {
+      console.error('Error modifying weekly plan:', err);
+      setModifyError('Failed to modify plan. Please try again.');
+    } finally {
+      setModifying(false);
     }
   };
 
@@ -134,6 +159,73 @@ export default function Plan() {
           >
             <span>🔄</span> Regenerate Plan
           </button>
+        </div>
+
+        {/* Modify Plan Panel */}
+        <div 
+          style={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+            backgroundColor: 'var(--bg-card)', 
+            border: '1px solid var(--border)', 
+            borderRadius: '12px', 
+            padding: '1rem',
+            boxShadow: 'var(--shadow)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', fontSize: '0.95rem', color: '#60a5fa' }}>
+            <span>🪄</span> Modify Plan
+          </div>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              value={editPrompt}
+              onChange={(e) => setEditPrompt(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleModify()}
+              placeholder="Tell Gemini what to modify (e.g. 'Make Monday vegetarian', 'Reduce Wednesday calories' or 'Replace squats')..."
+              style={{
+                flex: 1,
+                minWidth: '250px',
+                backgroundColor: 'rgba(255,255,255,0.03)',
+                border: '1px solid var(--border)',
+                borderRadius: '8px',
+                color: 'var(--text-primary)',
+                fontSize: '0.9rem',
+                outline: 'none',
+                padding: '0.6rem 0.8rem'
+              }}
+              disabled={modifying}
+            />
+            <button
+              onClick={handleModify}
+              disabled={modifying || !editPrompt.trim()}
+              className="btn-primary"
+              style={{
+                padding: '0.6rem 1.5rem',
+                fontSize: '0.9rem',
+                fontWeight: '700',
+                borderRadius: '8px',
+                opacity: modifying || !editPrompt.trim() ? 0.5 : 1,
+                cursor: modifying || !editPrompt.trim() ? 'not-allowed' : 'pointer',
+                border: 'none',
+                height: '38px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {modifying ? 'Updating...' : 'Apply Change'}
+            </button>
+          </div>
+          {modifying && (
+            <div style={{ fontSize: '0.85rem', color: '#60a5fa', display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.25rem' }}>
+              <span className="pulse-text" style={{ fontWeight: '800' }}>●●●</span> Gemini is revising your plan...
+            </div>
+          )}
+          {modifyError && (
+            <div style={{ fontSize: '0.85rem', color: 'var(--accent-red, #ef4444)', marginTop: '0.25rem' }}>
+              ⚠️ {modifyError}
+            </div>
+          )}
         </div>
 
         {/* Plan Cards Grid */}
