@@ -40,6 +40,22 @@ app.use('/api/dashboard', dashboardRouter);
 const aiRouter = require('./routes/ai.routes');
 app.use('/api/ai', aiRouter);
 
+// 404 Handler (for unknown routes)
+app.use((req, res) => {
+  res.status(404).json({ message: `Route ${req.method} ${req.url} not found` });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('❌ Unhandled error:', err.message);
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    message: err.message || 'Internal server error',
+    // only show stack trace in development
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
+
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
