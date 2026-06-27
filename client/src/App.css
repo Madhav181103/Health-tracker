@@ -104,6 +104,41 @@
   animation-delay: 0.4s;
 }
 
+/* Chat bubble styles */
+.message-bubble-user {
+  background-color: var(--accent-green, #22c55e);
+  color: #0f172a;
+  border-radius: 12px 12px 0px 12px;
+}
+
+.message-bubble-assistant {
+  background-color: var(--bg-card, #1e293b);
+  color: var(--text-primary, #f1f5f9);
+  border: 1px solid var(--border, #334155);
+  border-radius: 12px 12px 12px 0px;
+}
+
+/* Chat text pulsing loading indicator */
+@keyframes pulseText {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+.pulse-text {
+  animation: pulseText 1.2s infinite ease-in-out;
+}
+
+/* Quick prompt chips scrollbar styling */
+.chips-container::-webkit-scrollbar {
+  height: 4px;
+}
+.chips-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chips-container::-webkit-scrollbar-thumb {
+  background: var(--border, #334155);
+  border-radius: 2px;
+}
+
 /* Responsiveness */
 @media (max-width: 1024px) {
   .dashboard-row-2 {
