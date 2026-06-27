@@ -9,6 +9,18 @@ import StreakBadge from '../components/StreakBadge';
 // Import CSS variables and layout styles
 import '../App.css';
 
+function SkeletonCard({ height }) {
+  return (
+    <div 
+      className="skeleton" 
+      style={{ 
+        height, 
+        width: '100%'
+      }} 
+    />
+  );
+}
+
 export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,26 +69,26 @@ export default function Dashboard() {
     return (
       <div className="dashboard-container" style={{ animation: 'fadeIn 0.5s ease' }}>
         {/* Banner Skeleton */}
-        <div className="skeleton-box" style={{ height: '70px', width: '100%', marginBottom: '0.5rem' }} />
+        <SkeletonCard height="80px" />
 
         {/* Row 2: 4 Stat Cards Skeleton */}
         <div className="dashboard-row-2">
-          <div className="skeleton-box skeleton-stat-card" />
-          <div className="skeleton-box skeleton-stat-card" />
-          <div className="skeleton-box skeleton-stat-card" />
-          <div className="skeleton-box skeleton-stat-card" />
+          <SkeletonCard height="100px" />
+          <SkeletonCard height="100px" />
+          <SkeletonCard height="100px" />
+          <SkeletonCard height="100px" />
         </div>
 
         {/* Row 3: Charts Skeleton */}
         <div className="dashboard-row-3">
-          <div className="skeleton-box skeleton-chart-left" />
-          <div className="skeleton-box skeleton-chart-right" />
+          <SkeletonCard height="300px" />
+          <SkeletonCard height="300px" />
         </div>
 
         {/* Row 4: Bottom Components Skeleton */}
         <div className="dashboard-row-4">
-          <div className="skeleton-box skeleton-bottom-card" />
-          <div className="skeleton-box skeleton-bottom-card" />
+          <SkeletonCard height="200px" />
+          <SkeletonCard height="200px" />
         </div>
       </div>
     );
