@@ -1,7 +1,327 @@
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
+
 export default function Register() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [goal, setGoal] = useState('maintain');
+  const [dailyCalorieTarget, setDailyCalorieTarget] = useState(2000);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleRegister = async () => {
+    // Client-side validations
+    if (!name || !email || !password || !goal || !dailyCalorieTarget) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (name.trim().length < 2) {
+      setError('Name must be at least 2 characters long');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    if (Number(dailyCalorieTarget) <= 0) {
+      setError('Daily Calorie Target must be a positive number');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      
+      const response = await api.post('/auth/register', {
+        name: name.trim(),
+        email,
+        password,
+        goal,
+        dailyCalorieTarget: Number(dailyCalorieTarget)
+      });
+      
+      // Save auth session
+      login(response.data.user, response.data.token);
+      
+      // Redirect to homepage
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleRegister();
+    }
+  };
+
+  const inputFocusStyle = (e) => {
+    e.target.style.borderColor = 'var(--accent-green, #22c55e)';
+    e.target.style.boxShadow = '0 0 0 2px rgba(34, 197, 94, 0.15)';
+  };
+
+  const inputBlurStyle = (e) => {
+    e.target.style.borderColor = 'var(--border, #334155)';
+    e.target.style.boxShadow = 'none';
+  };
+
+  const inputBaseStyle = {
+    width: '100%',
+    backgroundColor: 'var(--bg-primary, #0f172a)',
+    border: '1px solid var(--border, #334155)',
+    color: 'var(--text-primary, #f1f5f9)',
+    padding: '0.75rem',
+    borderRadius: '8px',
+    fontSize: '0.95rem',
+    outline: 'none',
+    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none'
+  };
+
+  const labelBaseStyle = {
+    fontSize: '0.85rem',
+    fontWeight: '600',
+    color: 'var(--text-secondary, #94a3b8)',
+    letterSpacing: '0.025em'
+  };
+
   return (
-    <div>
-      <h2>Register Page</h2>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        backgroundColor: 'var(--bg-primary, #0f172a)',
+        padding: '2.5rem 1.5rem',
+        fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
+      }}
+    >
+      <div
+        className="card"
+        style={{
+          width: '100%',
+          maxWidth: '450px',
+          padding: '2.5rem 2rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.5rem',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3)'
+        }}
+      >
+        {/* Logo/Header */}
+        <div style={{ textAlign: 'center' }}>
+          <h1
+            style={{
+              fontSize: '2.25rem',
+              fontWeight: '800',
+              color: 'var(--accent-green, #22c55e)',
+              marginBottom: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.25rem',
+              letterSpacing: '-0.025em'
+            }}
+          >
+            <span>⚡</span> FitAI
+          </h1>
+          <p
+            style={{
+              fontSize: '0.95rem',
+              color: 'var(--text-secondary, #94a3b8)',
+              fontWeight: '500'
+            }}
+          >
+            Create your account
+          </p>
+        </div>
+
+        {/* Inputs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {/* Name input */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={labelBaseStyle}>Full Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="John Doe"
+              style={inputBaseStyle}
+              onFocus={inputFocusStyle}
+              onBlur={inputBlurStyle}
+            />
+          </div>
+
+          {/* Email input */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={labelBaseStyle}>Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="name@example.com"
+              style={inputBaseStyle}
+              onFocus={inputFocusStyle}
+              onBlur={inputBlurStyle}
+            />
+          </div>
+
+          {/* Password input */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={labelBaseStyle}>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="••••••••"
+              style={inputBaseStyle}
+              onFocus={inputFocusStyle}
+              onBlur={inputBlurStyle}
+            />
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #94a3b8)', marginTop: '-0.25rem' }}>
+              Must be at least 6 characters long
+            </span>
+          </div>
+
+          {/* Goal selection input */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={labelBaseStyle}>Fitness Goal</label>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                onKeyDown={handleKeyDown}
+                style={{
+                  ...inputBaseStyle,
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                  backgroundPosition: 'right 0.75rem center',
+                  backgroundSize: '1.25rem',
+                  backgroundRepeat: 'no-repeat',
+                  paddingRight: '2rem'
+                }}
+                onFocus={inputFocusStyle}
+                onBlur={inputBlurStyle}
+              >
+                <option value="lose" style={{ backgroundColor: '#1e293b' }}>Lose Weight</option>
+                <option value="maintain" style={{ backgroundColor: '#1e293b' }}>Maintain Weight</option>
+                <option value="gain" style={{ backgroundColor: '#1e293b' }}>Gain Weight</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Daily Calorie Target input */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={labelBaseStyle}>Daily Calorie Target (kcal)</label>
+            <input
+              type="number"
+              value={dailyCalorieTarget}
+              onChange={(e) => setDailyCalorieTarget(e.target.value)}
+              onKeyDown={handleKeyDown}
+              step={50}
+              min={100}
+              max={10000}
+              style={inputBaseStyle}
+              onFocus={inputFocusStyle}
+              onBlur={inputBlurStyle}
+            />
+          </div>
+        </div>
+
+        {/* Submit Actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+          <button
+            onClick={handleRegister}
+            disabled={loading}
+            className="btn-primary"
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              fontSize: '0.95rem',
+              fontWeight: '700',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              opacity: loading ? 0.6 : 1,
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loading ? 'Creating Account...' : 'Create Account'}
+          </button>
+
+          {/* Error Message */}
+          {error && (
+            <div
+              style={{
+                color: 'var(--accent-red, #ef4444)',
+                fontSize: '0.85rem',
+                fontWeight: '600',
+                textAlign: 'center',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                padding: '0.5rem 0.75rem',
+                borderRadius: '6px',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                marginTop: '0.25rem',
+                animation: 'shake 0.2s ease-in-out'
+              }}
+            >
+              <style>{`
+                @keyframes shake {
+                  0%, 100% { transform: translateX(0); }
+                  25% { transform: translateX(-4px); }
+                  75% { transform: translateX(4px); }
+                }
+              `}</style>
+              ⚠️ {error}
+            </div>
+          )}
+        </div>
+
+        {/* Redirect Login Link */}
+        <div
+          style={{
+            textAlign: 'center',
+            fontSize: '0.875rem',
+            color: 'var(--text-secondary, #94a3b8)',
+            marginTop: '0.5rem'
+          }}
+        >
+          Already have an account?{' '}
+          <Link
+            to="/login"
+            style={{
+              color: 'var(--accent-green, #22c55e)',
+              textDecoration: 'none',
+              fontWeight: '600',
+              transition: 'color 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.target.style.color = '#15803d'}
+            onMouseLeave={(e) => e.target.style.color = 'var(--accent-green, #22c55e)'}
+          >
+            Sign In
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
