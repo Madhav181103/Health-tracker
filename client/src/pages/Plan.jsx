@@ -4,25 +4,46 @@ import api from '../api/axios';
 // Import CSS
 import '../App.css';
 
+const MAX_RETRIES = 2;        // auto-retry up to 2 times before showing error
+const REQUEST_TIMEOUT = 90000; // 90 seconds — Gemini + cold start can be slow
+
 export default function Plan() {
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [editPrompt, setEditPrompt] = useState('');
   const [modifying, setModifying] = useState(false);
   const [modifyError, setModifyError] = useState(null);
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (attempt = 1) => {
     try {
       setLoading(true);
       setError(null);
       setModifyError(null);
-      
-      const response = await api.post('/ai/weekly-plan');
+      setRetryCount(attempt - 1);
+
+      const response = await api.post('/ai/weekly-plan', {}, {
+        timeout: REQUEST_TIMEOUT
+      });
       setPlan(response.data.plan);
+      setRetryCount(0);
     } catch (err) {
-      console.error('Error generating weekly plan:', err);
-      setError('Failed to generate plan. Please try again.');
+      console.error(`Error generating weekly plan (attempt ${attempt}):`, err);
+
+      // Auto-retry on transient errors (network hiccup, cold start, Gemini fluke)
+      if (attempt < MAX_RETRIES + 1) {
+        console.log(`Retrying... (${attempt}/${MAX_RETRIES})`);
+        return handleGenerate(attempt + 1);
+      }
+
+      // All retries exhausted — show a meaningful error
+      const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+      setError(
+        isTimeout
+          ? 'Request timed out. The server may be waking up — please try again in a moment.'
+          : 'Failed to generate plan. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -74,6 +95,11 @@ export default function Plan() {
         <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
           Building a custom diet and workout plan based on your recent activity.
         </p>
+        {retryCount > 0 && (
+          <p style={{ fontSize: '0.85rem', color: '#f59e0b' }}>
+            ⚡ Attempt {retryCount + 1} of {MAX_RETRIES + 1} — retrying automatically...
+          </p>
+        )}
       </div>
     );
   }

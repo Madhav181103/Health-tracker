@@ -18,6 +18,42 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 /**
+ * Calls model.generateContent() with automatic retries on transient failures.
+ * Gemini occasionally returns errors or malformed JSON — retrying resolves most cases.
+ *
+ * @param {string} prompt
+ * @param {number} maxRetries
+ * @returns {Promise<string>} Cleaned response text
+ */
+async function callGeminiWithRetry(prompt, maxRetries = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await model.generateContent(prompt);
+      let text = result.response.text();
+
+      // Strip any markdown code fences Gemini might wrap around the JSON
+      text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+      // Extract the JSON object in case there's surrounding prose
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) text = jsonMatch[0];
+
+      // Validate it's parseable before returning
+      JSON.parse(text);
+      return text;
+    } catch (err) {
+      lastError = err;
+      console.warn(`Gemini attempt ${attempt}/${maxRetries} failed:`, err.message);
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 1000 * attempt)); // exponential-ish backoff
+      }
+    }
+  }
+  throw lastError;
+}
+
+/**
  * Single-Turn vs Multi-Turn Conversations:
  * 
  * - model.generateContent() (Single Turn):
@@ -88,18 +124,7 @@ CRITICAL INSTRUCTIONS:
 `;
 
   try {
-    const result = await model.generateContent(prompt);
-    let text = result.response.text();
-
-    // Clean up markdown wrappers
-    text = text.replace(/```json|```/g, '').trim();
-
-    // Extract JSON object if there is wrapping text
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      text = jsonMatch[0];
-    }
-
+    const text = await callGeminiWithRetry(prompt);
     const parsedPlan = JSON.parse(text);
     return parsedPlan;
   } catch (error) {
@@ -208,18 +233,7 @@ CRITICAL INSTRUCTIONS:
 `;
 
   try {
-    const result = await model.generateContent(prompt);
-    let text = result.response.text();
-
-    // Clean up markdown wrappers
-    text = text.replace(/```json|```/g, '').trim();
-
-    // Extract JSON object if there is wrapping text
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      text = jsonMatch[0];
-    }
-
+    const text = await callGeminiWithRetry(prompt);
     const parsedPlan = JSON.parse(text);
     return parsedPlan;
   } catch (error) {
