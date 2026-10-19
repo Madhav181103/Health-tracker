@@ -15,7 +15,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
  *      * Capabilities: While 'gemini-1.5-pro' is designed for complex reasoning, multi-modal tasks, and heavy tasks, 'gemini-1.5-flash' is perfectly suited for general text processing, JSON formatting, summaries, and chat features.
  */
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 /**
  * Single-Turn vs Multi-Turn Conversations:
